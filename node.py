@@ -1,9 +1,16 @@
-class Node:
-    def __init__(self) -> None:
-        pass
+class Node():
+    def __init__(self,label) -> None:
+        self.label = label
+        self.ports = []
+        self.table = []
 
-    def initTable(self):
+    def initLabel(self):
         return
     
-    def initPort(self):
+    def initTable(self,table):
+        self.table = table
+        return
+    
+    def initPort(self,ports):
+        self.ports = ports
         return

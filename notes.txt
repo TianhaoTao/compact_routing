@@ -33,3 +33,6 @@ delta(A,v) = min
 
 cluster of w with respect to set a
  
+extended dominating set
+
+pivot, landmarker, center
