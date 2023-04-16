@@ -4,7 +4,8 @@ class Node():
         self.ports = []
         self.table = []
 
-    def initLabel(self):
+    def initLabel(self,label):
+        self.label = label
         return
     
     def initTable(self,table):

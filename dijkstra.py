@@ -160,3 +160,12 @@ def generate_tree(n):
 # print(f"bandwidth is {g.bandwidth_edge_list()}")
  
 # # This code is contributed by Divyanshu Mehta
+
+
+
+    def cluster(self,A,v):
+        C_v = []
+        for u in range(self.n):
+            if self.adj_matrix[v][u]<self.delta_A_u(A,v):
+                C_v.append(u)
+        return C_v
