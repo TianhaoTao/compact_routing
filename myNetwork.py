@@ -9,7 +9,7 @@ import util
 
 class Graph():
 
-    def __init__(self,n,p,seed,table_type) -> None:
+    def __init__(self,n,p,seed) -> None:
         self.n = n
         g = nx.fast_gnp_random_graph(n,p,seed=seed)
         while(not nx.is_connected(g)):
@@ -19,38 +19,47 @@ class Graph():
         self.g = g
         print(g)
         self.adj_matrix = self.create_weighted_adj_matrix(g.edges,self.n)
+        self.nodes = {}
        
         self.s_bound,self.num_iter_bound,self.A_bound,self.C_bound = util.get_bounds(n)
-        self.nodes = []
-        for i in range(n):
-            self.nodes.append(node.Node(i))
-            ports = []
-            for j in range(n):
-                if self.adj_matrix[i][j] !=0:
-                    ports.append(j)
-            self.nodes[i].initPort(ports)
 
-        self.generate_routing_table(table_type)
+        # self.generate_routing_table(table_type)
         # print(f"edges in the graph are {g.edges}")
         # print(f"nodes of graph are {g.nodes}")
         # print(f"adj matrix is {self.adj_matrix}")
+
+    # def copy_net(self,net):
+    #     self.n = net.n
+    #     self.g = net.g
+    #     self.adj_matrix = net.adj_matrix
+    #     self.s_bound,self.num_iter_bound,self.A_bound,self.C_bound = util.get_bounds(self.n)
+    #     self.nodes[self.table_type] = []
+    #     for i in range(self.n):
+    #         self.nodes[self.table_type].append(node.Node(i))
+    #         ports = []
+    #         for j in range(self.n):
+    #             if self.adj_matrix[i][j] !=0:
+    #                 ports.append(j)
+    #         self.nodes[self.table_type][i].initPort(ports)
+        
 
     def drawGraph(self):
         nx.draw_networkx(self.g)
         plt.draw() 
         plt.show() 
 
+
     def create_weighted_adj_matrix(self,edge_list,n):
         adj_matrix = [[0 for column in range(n)]
                         for row in range(n)]
         for edge in edge_list:
-            weight = random.randint(1, 10)
+            weight = random.randint(1, 100)
             adj_matrix[edge[0]][edge[1]] = weight
             adj_matrix[edge[1]][edge[0]] = weight
 
         return adj_matrix
     
-    def generate_routing_table(self,table_type):
+    def generate_shortest_dist(self):
         naive_routing_table = []
         shortest_dists = []
         for i in range(self.n):
@@ -60,12 +69,25 @@ class Graph():
 
         naive_routing_table = np.array(naive_routing_table).T.tolist()
         self.shortest_dist = shortest_dists
-
+        return naive_routing_table,shortest_dists
+        
+    
+    def generate_routing_table(self,table_type):
+        self.nodes[table_type] = []
+        for i in range(self.n):
+            self.nodes[table_type].append(node.Node(i))
+            ports = []
+            for j in range(self.n):
+                if self.adj_matrix[i][j] !=0:
+                    ports.append(j)
+            self.nodes[table_type][i].initPort(ports)
+        naive_routing_table,shortest_dists = self.generate_shortest_dist()
         if table_type == "thorup":
             self.thorup_zwick_table(naive_routing_table)
         elif table_type == "naive":
+            print(f"size of naive routing table is {len(naive_routing_table[0])}")
             for i in range(self.n):
-                self.nodes[i].initTable(naive_routing_table[i])  
+                self.nodes[table_type][i].initTable(naive_routing_table[i]) 
         else:
             raise Exception("Please input the correct routing scheme")
         return naive_routing_table, shortest_dists
@@ -87,14 +109,14 @@ class Graph():
                 assert v not in table
                 table[v] = naive_routing[w][v]
             
-            self.nodes[w].initTable(table)
+            self.nodes["thorup"][w].initTable(table)
             if len(table)>max_table_size:
                 max_table_size = len(table)
             label_w = [w,centers[w],naive_routing[centers[w]][w]]
             # print(f"label_w is {label_w}")
-            self.nodes[w].initLabel(label_w)
+            self.nodes["thorup"][w].initLabel(label_w)
 
-        print(f"max size of a table is {max_table_size}")
+        print(f"max size of a thorup table is {max_table_size}")
     
     def delta_A_u(self,A,v):
         min = float('inf')
@@ -164,28 +186,29 @@ class Graph():
         # print(f"closets centers are {centers},length is {len(centers)}")
         return A,centers,C          
     
-    def send_packet(self,init,dest,routing_type):
+    def send_packet(self,init,dest,table_type):
         newPacket = packet.Packet(init,dest)
         dist = 0
         dist_seg = []
         newPacket.extend_path(init)
 
-        if routing_type == "naive":
+        if table_type == "naive":
             while(newPacket.current != newPacket.dest):
-                current_node = self.nodes[newPacket.current]
+                current_node = self.nodes[table_type][newPacket.current]
+                # print(f"current node table is {current_node.table}")
                 next_node_index = current_node.table[dest]
                 path_seg_dist = self.adj_matrix[newPacket.current][next_node_index]
                 dist += path_seg_dist
                 dist_seg.append(path_seg_dist)
                 newPacket.current = next_node_index
                 newPacket.extend_path(next_node_index)
-        elif routing_type == "thorup":
-            newPacket.header = self.nodes[newPacket.dest].label ## header takes the label of the destination
+        elif table_type == "thorup":
+            newPacket.header = self.nodes[table_type][newPacket.dest].label ## header takes the label of the destination
             while(newPacket.current != newPacket.dest):
                 # print(f"newPacket.current is {newPacket.current}")
-                current_node = self.nodes[newPacket.current]
+                current_node = self.nodes[table_type][newPacket.current]
                 # print(f"routing table of current node is {current_node.table}, label is {current_node.label}")
-                # print(f"self.nodes are {self.nodes}")
+                # print(f"self.nodes[table_type] are {self.nodes[table_type]}")
                 if dest in current_node.table:
                     # print(f"heading to destination directedly")
                     next_node_index = current_node.table[dest]
