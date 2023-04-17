@@ -57,6 +57,8 @@ if __name__ == "__main__":
     all_stretch = args.max_stretch
 
     random.seed(seed)
+    assert initial_node_index<n
+    assert destination_node_index<n
 
     net = initialization(all_stretch)
 
