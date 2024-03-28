@@ -1,5 +1,5 @@
 # compact_routing
- final project
+This is an implementation of Stretch3 in section 3 of paper Thorup, Mikkel, and Uri Zwick. "Compact routing schemes." Proceedings of the thirteenth annual ACM symposium on Parallel algorithms and architectures. 2001.
 
 python main.py [n] [init] [dest] --max_stretch
 
